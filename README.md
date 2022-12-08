@@ -11,6 +11,6 @@ The resolution of points is 0.5 Bohr along each axis.
 $ python mol2cub.py input.mol2 output.cube head
 
 head - the head section of a cube file (at least the first 6 lines) specifying 
-cooridnates of the box origin, number of points and spacing along each direction. 
+coordinates of the box origin, number of points and spacing along each direction. 
 
 The resulting cube file can be visualised using standard software.
