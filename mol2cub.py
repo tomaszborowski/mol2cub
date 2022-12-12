@@ -16,11 +16,12 @@ head - the head section of a cube file (at least the first 6 lines) specifying
 cooridnates of the box origin, number of points and spacing along each direction 
 
 
-Last update: 2 December 2022
+Last update: 12 December 2022
 """
 
 import sys, re, numpy, scipy, scipy.spatial
-from decimal import Decimal
+#from decimal import Decimal
+from fortranformat import FortranRecordWriter
 
 bohr = 1.88972599
 read_head = False # the default mode - without reading the head file
@@ -136,7 +137,7 @@ for name in atomnames:
 
 # Write a little header for the cubefile output
 with open (output_f_name,'w') as file:
-    file.write("Potential from mol2\nMade using python\n")
+    file.write(" Potential from mol2\n Made using python\n")
 
 # Determine the extents of the box
 if not read_head:
@@ -147,21 +148,32 @@ if not read_head:
 # Write the extent of the box to the cubefile
 with open (output_f_name,'a') as file:
     # Write the origin
-    file.write("  " + str(natoms) 
-    + "  " + str(xbox[0]) 
-    + "  " + str(ybox[0])
-    + "  " + str(zbox[0]) + "\n")    
+#    file.write("  " + str(natoms) 
+#    + "  " + str(xbox[0]) 
+#    + "  " + str(ybox[0])
+#    + "  " + str(zbox[0]) + "\n")    
+    format = FortranRecordWriter('(I5,3F12.6)')
+    output = format.write([natoms, xbox[0], ybox[0], zbox[0]]) + "\n"
+    file.write(output)
     # Write the resolution and extents
-    file.write("  " + str(len(xbox)) + " " + str(xres) + " 0.0 0.0 \n")
-    file.write("  " + str(len(ybox)) + " 0.0 " + str(yres) + " 0.0 \n")
-    file.write("  " + str(len(zbox)) + " 0.0 0.0 " + str(zres) + " \n")
+#    file.write("  " + str(len(xbox)) + " " + str(xres) + " 0.0 0.0 \n")
+#    file.write("  " + str(len(ybox)) + " 0.0 " + str(yres) + " 0.0 \n")
+#    file.write("  " + str(len(zbox)) + " 0.0 0.0 " + str(zres) + " \n")
+    output = format.write([len(xbox), xres, 0.0, 0.0]) + "\n"
+    file.write(output)    
+    output = format.write([len(ybox), 0.0, yres, 0.0]) + "\n"
+    file.write(output)
+    output = format.write([len(zbox), 0.0, 0.0, zres]) + "\n"
+    file.write(output)
 
 # Write the atomic coordinates
+format = FortranRecordWriter('(I5,4F12.6)')
 with open (output_f_name,'a') as file:
     for i in range(0,natoms):
-        file.write("  " + str(atomicnumbers[i]) + "  0.0  " + str(round(xcoords[i],6)) + \
-                   "  " + str(round(ycoords[i],6)) + "  " + str(round(zcoords[i],6)) + " \n")
-  
+#        file.write("  " + str(atomicnumbers[i]) + "  0.0  " + str(round(xcoords[i],6)) + \
+#                   "  " + str(round(ycoords[i],6)) + "  " + str(round(zcoords[i],6)) + " \n")
+        output = format.write([atomicnumbers[i], atomicnumbers[i], xcoords[i], ycoords[i], zcoords[i]]) + "\n"
+        file.write(output)  
 
 # generate an array of vectors - points of the box
 temp = []
@@ -184,6 +196,7 @@ for i in range(0,natoms):
 
 
 # Write the calculated ESP values to the cubefile
+format = FortranRecordWriter('(E13.5)')
 with open (output_f_name,'a') as file:
      n=0
      c=0
@@ -191,7 +204,9 @@ with open (output_f_name,'a') as file:
          if n > 5:
              file.write('\n')
              n=0
-         file.write(' ' + str('%.5E' % Decimal(esp)) + ' ')
+#         file.write(' ' + str('%.5E' % Decimal(esp)) + ' ')
+         output = format.write([esp])
+         file.write(output)
          n=n+1
          c=c+1
      file.write('\n\n') 
