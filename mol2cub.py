@@ -16,11 +16,10 @@ head - the head section of a cube file (at least the first 6 lines) specifying
 cooridnates of the box origin, number of points and spacing along each direction 
 
 
-Last update: 12 December 2022
+Last update: 13 December 2022
 """
 
 import sys, re, numpy, scipy, scipy.spatial
-#from decimal import Decimal
 from fortranformat import FortranRecordWriter
 
 bohr = 1.88972599
@@ -147,18 +146,11 @@ if not read_head:
 
 # Write the extent of the box to the cubefile
 with open (output_f_name,'a') as file:
-    # Write the origin
-#    file.write("  " + str(natoms) 
-#    + "  " + str(xbox[0]) 
-#    + "  " + str(ybox[0])
-#    + "  " + str(zbox[0]) + "\n")    
+    # Write the origin   
     format = FortranRecordWriter('(I5,3F12.6)')
     output = format.write([natoms, xbox[0], ybox[0], zbox[0]]) + "\n"
     file.write(output)
     # Write the resolution and extents
-#    file.write("  " + str(len(xbox)) + " " + str(xres) + " 0.0 0.0 \n")
-#    file.write("  " + str(len(ybox)) + " 0.0 " + str(yres) + " 0.0 \n")
-#    file.write("  " + str(len(zbox)) + " 0.0 0.0 " + str(zres) + " \n")
     output = format.write([len(xbox), xres, 0.0, 0.0]) + "\n"
     file.write(output)    
     output = format.write([len(ybox), 0.0, yres, 0.0]) + "\n"
@@ -170,8 +162,6 @@ with open (output_f_name,'a') as file:
 format = FortranRecordWriter('(I5,4F12.6)')
 with open (output_f_name,'a') as file:
     for i in range(0,natoms):
-#        file.write("  " + str(atomicnumbers[i]) + "  0.0  " + str(round(xcoords[i],6)) + \
-#                   "  " + str(round(ycoords[i],6)) + "  " + str(round(zcoords[i],6)) + " \n")
         output = format.write([atomicnumbers[i], atomicnumbers[i], xcoords[i], ycoords[i], zcoords[i]]) + "\n"
         file.write(output)  
 
@@ -193,21 +183,33 @@ for i in range(0,natoms):
     dist = scipy.spatial.distance.cdist(at_coords_ex, points_array)
     dist_1 = inv_v(dist[0])
     esp_array +=  charges[i] * dist_1
-
-
+ 
 # Write the calculated ESP values to the cubefile
-format = FortranRecordWriter('(E13.5)')
 with open (output_f_name,'a') as file:
-     n=0
-     c=0
-     for esp in esp_array:
-         if n > 5:
-             file.write('\n')
-             n=0
-#         file.write(' ' + str('%.5E' % Decimal(esp)) + ' ')
-         output = format.write([esp])
-         file.write(output)
-         n=n+1
-         c=c+1
-     file.write('\n\n') 
-
+    i=0
+    n_full_lines = Nz//6
+    n_empty_fields = 6 - Nz%6
+    n_full_fields = 6 - n_empty_fields
+    
+    format_line = FortranRecordWriter('(6E13.5)')
+    format_field = FortranRecordWriter('(E13.5)')
+    for l in range(Nx*Ny):
+        for k in range(n_full_lines):
+            temp = []
+            for j in range(6):
+                temp.append(esp_array[i])
+                i = i + 1
+            output = format_line.write(temp) + "\n"
+            file.write(output)
+        temp = ""
+        for m in range(n_full_fields):
+            temp = temp + format_field.write([esp_array[i]])
+            i = i + 1
+        for n in range(n_empty_fields):
+            temp = temp + "             "
+        if n_full_fields > 0:
+            temp = temp + "\n"
+            file.write(temp)
+    
+    file.write('\n\n')        
+    
